@@ -1,0 +1,52 @@
+<html>
+<head>
+	    <script src="https://meet.jit.si/external_api.js"></script>
+</head>
+<body>
+	  <div id="meet"></div>
+	</body>
+
+</html>
+<script>
+	const domain = 'meet.jit.si';
+    const options = {
+        roomName: 'example-room',
+        width: 700,
+        height: 700,
+        parentNode: document.querySelector('#meet')
+    };
+
+    const api = new JitsiMeetExternalAPI(domain, options);
+
+    // Define the virtual user
+    const virtualUser = {
+        name: 'Virtual User',
+        email: 'virtualuser@example.com',
+        isVirtualUser: true
+    };
+
+    // Send a chat message as the virtual user
+    api.executeCommand('displayName', virtualUser.name);
+    api.executeCommand('sendEndpointTextMessage', {
+        to: 'all',
+        text: 'Hello, I am a virtual user!'
+    });
+
+    // Ask a question as the virtual user
+    api.executeCommand('sendEndpointTextMessage', {
+        to: 'all',
+        text: 'What is your favorite color?'
+    });
+
+    // Listen for responses from the end user
+    api.on('endpointTextMessageReceived', (data) => {
+        if (!data.sender.isVirtualUser) {
+            console.log(`Received message from ${data.sender.name}: ${data.text}`);
+            api.executeCommand('sendEndpointTextMessage', {
+            to: 'all',
+            text: `You said your favorite color is ${data.text}.`
+            });
+        }
+    });
+
+</script>

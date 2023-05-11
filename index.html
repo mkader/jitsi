@@ -13,10 +13,29 @@
         roomName: 'example-room',
         width: 700,
         height: 700,
-        parentNode: document.querySelector('#meet')
+        parentNode: document.querySelector('#meet'),
+        configOverwrite: {
+            enableWelcomePage: false,
+            prejoinPageEnabled: false,
+        },
+        interfaceConfigOverwrite: {
+            SHOW_CHROME_EXTENSION_BANNER: false,
+        },
+        userInfo: {
+            displayName: 'End User',
+        },
     };
 
     const api = new JitsiMeetExternalAPI(domain, options);
+
+    navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+    .then((stream) => {
+        api.executeCommand('avatarUrl', stream);
+    })
+    .catch((error) => {
+        console.error(error);
+    });
+  
 
     // Define the virtual user
     const virtualUser = {
@@ -25,28 +44,38 @@
         isVirtualUser: true
     };
 
-    // Send a chat message as the virtual user
-    api.executeCommand('displayName', virtualUser.name);
-    api.executeCommand('sendEndpointTextMessage', {
-        to: 'all',
-        text: 'Hello, I am a virtual user!'
-    });
-
-    // Ask a question as the virtual user
-    api.executeCommand('sendEndpointTextMessage', {
-        to: 'all',
-        text: 'What is your favorite color?'
-    });
-
-    // Listen for responses from the end user
-    api.on('endpointTextMessageReceived', (data) => {
-        if (!data.sender.isVirtualUser) {
-            console.log(`Received message from ${data.sender.name}: ${data.text}`);
-            api.executeCommand('sendEndpointTextMessage', {
+    api.on('ready', () => {
+        // Send a chat message as the virtual user
+        //api.executeCommand('displayName', virtualUser.name);
+        api.executeCommand('sendEndpointTextMessage', {
             to: 'all',
-            text: `You said your favorite color is ${data.text}.`
-            });
-        }
-    });
+            message: 'Hello, I am a virtual user!',
+            displayName: virtualUser.name,
+            email: virtualUser.email,
+            isVirtualUser: virtualUser.isVirtualUser
+        });
 
+        // Ask a question as the virtual user
+        api.executeCommand('sendEndpointTextMessage', {
+            to: 'all',
+            message: 'What is your favorite color?',
+            displayName: virtualUser.name,
+            email: virtualUser.email,
+            isVirtualUser: virtualUser.isVirtualUser
+        });
+
+        // Listen for responses from the end user
+        api.on('incomingMessage', (message) => {
+            if (!message.isPrivate && message.senderInfo.email !== virtualUser.email) {
+            console.log(`Received message from ${message.senderInfo.displayName}: ${message.message}`);
+            api.executeCommand('sendEndpointTextMessage', {
+                to: 'all',
+                message: `You said your favorite color is ${message.message}.`,
+                displayName: virtualUser.name,
+                email: virtualUser.email,
+                isVirtualUser: virtualUser.isVirtualUser
+            });
+            }
+        });
+    });
 </script>
